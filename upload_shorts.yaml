@@ -1,0 +1,26 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    metrics-by-endpoint: {} # Used to get metrics for each endpoint individually.
+  processor: ./test-utils.js
+  phases:
+  - name: "Warm up"    # WARM UP PHASE: duration: 10s, starting with 1 new client/sec up to 5 new clients/sec
+    duration: 10
+    arrivalRate: 1
+    rampTo: 5
+  #- name: "Main test"    # MAIN TESTS: duration: 30s, with 10 new clients/sec. Should be varied depending on scenario.
+    #duration: 30
+    #arrivalRate: 10
+scenarios:
+  - name: 'Upload short'
+    weight: 10
+    flow:
+      - post:
+          beforeRequest: "getLoginDetails"
+          url: "/shorts/{{ userId }}?pwd={{ pwd }}"
+          afterResponse: "processVideoAddReply"
+      - post:
+          beforeRequest: "uploadBlobBody"
+          url: "/blobs/{{ blobUrl }}"
+            
+

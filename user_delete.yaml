@@ -1,0 +1,26 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    phases:
+        - name: simple_post
+          duration: 100
+          arrivalCount: 200
+    payload:
+        path: ./data/users.csv
+        order: sequence # selects users sequentially, default is random
+        #loadAll: true # load the whole CSV
+        skipHeader: true # The first line is a header, so we want to skip it
+        delimiter: "," # standard delimiter
+        skipEmptyLines: true # not important in our case
+        fields:
+            - "userId"
+            - "email"
+            - "pwd"
+            - "displayName"
+scenarios:
+    - name: TuKanoDeleteUserFlow
+      flow: 
+        - delete:
+            url: "/users/{{ userId }}?pwd={{ pwd }}"
+            headers:
+                Accepts: application/json
+            

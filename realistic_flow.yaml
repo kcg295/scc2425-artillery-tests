@@ -1,0 +1,102 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    metrics-by-endpoint: {} # Used to get metrics for each endpoint individually.
+  processor: ./test-utils.js
+  phases:
+  - name: "Warm up"    # WARM UP PHASE: duration: 10s, starting with 1 new client/sec up to 5 new clients/sec
+    duration: 10
+    arrivalRate: 1
+    rampTo: 5
+  #- name: "Main test"    # MAIN TESTS: duration: 30s, with 10 new clients/sec. Should be varied depending on scenario.
+    #duration: 30
+    #arrivalRate: 10
+scenarios:
+  - name: 'Register user'
+    weight: 10
+    flow:
+      - post:
+          url: /users/
+          headers:
+            Content-Type: application/json
+            Accept: application/json
+          beforeRequest: "uploadRandomizedUser"
+          afterResponse: "processRegisterReply"
+
+  - name: "Get User's Shorts"
+    weight: 50
+    flow:
+      - get:
+          beforeRequest: "getLoginDetails"
+          url: "/shorts/{{ userId }}/shorts"
+          headers:
+            Accept: application/json
+
+  - name: 'Upload short'
+    weight: 10
+    flow:
+      - post:
+          beforeRequest: "getLoginDetails"
+          url: "/shorts/{{ userId }}?pwd={{ pwd }}"
+          afterResponse: "processVideoAddReply"
+      - post:
+          beforeRequest: "uploadBlobBody"
+          url: "/blobs/{{ blobUrl }}"
+            
+
+  - name: "Download short"
+    weight: 100
+    flow:
+      - get:
+          beforeRequest: "getShortDownloadDetails"
+          url: "/shorts/{{ shortId }}"
+          afterResponse: "processVideoGetReply"
+      - get:
+          url: "/blobs/{{ blobUrl }}"
+
+  - name: "View feed"
+    weight: 200
+    flow:
+      - get:
+          beforeRequest: "getLoginDetails"
+          url: "/shorts/{{ userId }}/feed?pwd={{ pwd }}"
+          headers:
+            Accept: application/json
+
+  - name: "Like short"
+    weight: 50
+    flow:
+      - post:
+          beforeRequest: "setupLikeShort"
+          url: "/shorts/{{ shortId }}/{{ userId }}/likes?pwd={{ pwd }}"
+          headers:
+            Content-Type: application/json
+          body:
+              '"True"'
+  - name: "Get Short Likes"
+    weight: 25
+    flow:
+     - get:
+         beforeRequest: "getShortDownloadDetails"
+         url: "/shorts/{{ shortId }}/likes?pwd={{ pwd }}"
+         headers:
+           Accept: application/json
+  - name: "Get User Follows"
+    weight: 20
+    flow:
+      - get:
+          beforeRequest: "getLoginDetails"
+          url: "/shorts/{{ userId }}/followers?pwd={{ pwd }}"
+          headers:
+            Accepts: application/json
+
+  - name: "Follow user"
+    weight: 50
+    flow:
+      - post:
+          beforeRequest: "getFollowDetails"
+          url: "/shorts/{{ userId1 }}/{{ userId2 }}/followers?pwd={{ pwd }}"
+          headers:
+            Content-Type: application/json
+          body:
+            '"True"'

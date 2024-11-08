@@ -1,0 +1,44 @@
+config:
+    target: http://127.0.0.1:8080/tukano/rest
+    phases:
+        - name: simple_post
+          duration: 100
+          arrivalCount: 200
+    plugins:                                                                      
+        metrics-by-endpoint: {}
+    payload:
+        path: ./data/users.csv
+        order: sequence # selects users sequentially, default is random
+        #loadAll: true # load the whole CSV
+        skipHeader: true # The first line is a header, so we want to skip it
+        delimiter: "," # standard delimiter
+        skipEmptyLines: true # not important in our case
+        fields:
+            - "userId"
+            - "email"
+            - "pwd"
+            - "displayName"
+scenarios:
+    - name: TuKanoWholeUserFlow
+      flow:
+        - post:
+            url: /users/
+            headers:
+                Content-Type: application/json
+            json:
+                userId: "{{ userId }}" # this parameter is filled from the fields above
+                pwd: "{{ pwd }}"
+                email: "{{ email }}"
+                displayName: "{{ displayName }}"
+        - get:
+            url: "/users/{{ userId}}?pwd={{ pwd }}"
+        - put:
+            url: "/users/{{ userId }}?pwd={{ pwd }}"
+            headers:
+                Content-Type: application/json
+                Accepts: application/json
+            json:
+                userId: "{{ userId }}"
+                pwd: "{{ pwd }}"                                                
+                email: "{{ email }}"                                            
+                displayName: "{{ displayName }}1" 
